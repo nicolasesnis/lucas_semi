@@ -109,7 +109,7 @@ st.table(df)
 
 st.markdown("""---""")
 st.header("Je parie !")
-st.write('*Pas de paiement, simplement une promesse de pari à honorer après la course.*')
+st.write('Cagnotte Lydia : https://lydia-app.com/collect/91003-lucas-semi-2023/fr')
 
 mode = st.radio(
      "",
