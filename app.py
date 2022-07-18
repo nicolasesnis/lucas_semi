@@ -109,7 +109,7 @@ st.table(df)
 
 st.markdown("""---""")
 st.header("Je parie !")
-st.write('Enregistrez votre paris ici, puis payez sur la cagnotte Lydia : https://lydia-app.com/collect/91003-lucas-semi-2023/fr')
+st.write('Enregistrez votre pari ici, puis payez sur la cagnotte Lydia : https://lydia-app.com/collect/91003-lucas-semi-2023/fr')
 
 mode = st.radio(
      "",
