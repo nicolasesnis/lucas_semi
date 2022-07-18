@@ -1,9 +1,43 @@
+import gspread
 import streamlit as st
 import pandas as pd
+from oauth2client.service_account import ServiceAccountCredentials
+
+def authenticate(creds_path=None):
+    """gc
+    Refreshes the Sheets API credentials using the service account credentials stored in a json.
+    """
+    scope = ['https://spreadsheets.google.com/feeds',
+             'https://www.googleapis.com/auth/drive']
+    if creds_path == None:
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(
+            str(path) + '/service_account_credentials.json', scope)
+    else:
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(
+            creds_path, scope)
+    gc = gspread.authorize(credentials)
+    return gc
+
+gc = authenticate('lucas-semi-1319e524581c.json')
+
+def read_sheet(gc):    
+    wks = gc.open_by_key('1iPYvh65Y_rLWE_wyCcWh3LNWs2spzT_CO65rUfCHCys')
+    sheet = wks.worksheet('data')
+    data = sheet.get_all_values()
+    data = pd.DataFrame(data[1:], columns=data[0])
+    return data
+
+
+def write_df(df, gc):
+    wks = gc.open_by_key('1iPYvh65Y_rLWE_wyCcWh3LNWs2spzT_CO65rUfCHCys')
+    sheet = wks.worksheet('data')
+    wks.values_clear(sheet.title)
+    sheet.update('A1', [df.columns.values.tolist()] +
+                 df.values.tolist(), value_input_option='USER_ENTERED')
 
 
 def bet(temps, montant, pwd, username, mode, message=None):
-    df = pd.read_csv('data/paris.csv').fillna('')
+    df = read_sheet(gc)
     if 'Nouveau' not in mode:
         if len(df[(df['pwd'] == pwd) & (df['Pseudo'] == username)]) == 0:
             return 401
@@ -16,7 +50,7 @@ def bet(temps, montant, pwd, username, mode, message=None):
     elif 'Nouveau' in mode:
         new = pd.DataFrame(columns=['Pseudo', 'Temps', 'Montant', 'Message pour Lucas', 'pwd'], data=[[username, temps, montant, message, pwd]])
         df = pd.concat([df, new])
-    df.dropna().to_csv('data/paris.csv', index=None)
+    write_df(df.dropna(), gc)
     return 200
 
 
@@ -62,7 +96,7 @@ with col1:
 
 st.markdown("""---""")
 st.header('Les paris')
-df = pd.read_csv('data/paris.csv').dropna()
+df = read_sheet(gc)
 df['Montant'] = df['Montant'].astype(int).astype(str) + ' euros'
 del df['pwd']
 st.markdown("""
@@ -99,9 +133,9 @@ else:
 
 
 if st.button(mode):
-    if  ("Supprimer" in mode and any(i == '' for i in [username, pwd])) or ("Supprimer" not in mode  and any(i == '' or i == 0 for i in [username, pwd, h, mn, s, montant])):
+    if  ("Supprimer" in mode and any(i == '' for i in [username, pwd])) or ("Supprimer" not in mode  and any(i == '' for i in [username, pwd, montant])):
         st.error('Remplis tous les champs puis réessaie !')
-    elif "Nouveau" in mode and username in pd.read_csv('data/paris.csv')['Pseudo'].unique():
+    elif "Nouveau" in mode and username in read_sheet(gc)['Pseudo'].unique():
         st.error('Ce pseudo est déjà pris, choisis-en un autre...')
     else:
         out = bet(temps=temps, 
